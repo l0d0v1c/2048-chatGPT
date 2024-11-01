@@ -13,6 +13,8 @@
       background-color: #faf8ef;
       margin: 0;
       padding: 0;
+      /* Empêcher le défilement de la page */
+      overflow: hidden;
     }
 
     h1 {
@@ -25,6 +27,8 @@
       max-width: 500px;
       margin: 20px auto;
       padding-bottom: 70px;
+      /* Désactiver les actions tactiles par défaut */
+      touch-action: none;
     }
 
     #game-container {
@@ -39,6 +43,8 @@
       padding: 10px;
       box-sizing: border-box;
       margin: 0 auto;
+      /* Désactiver les actions tactiles par défaut */
+      touch-action: none;
     }
 
     .tile {
@@ -232,12 +238,21 @@
     let touchStartX = null;
     let touchStartY = null;
 
-    document.addEventListener('touchstart', function(event) {
+    const gameContainerWrapper = document.getElementById('game-container-wrapper');
+
+    gameContainerWrapper.addEventListener('touchstart', function(event) {
       touchStartX = event.changedTouches[0].screenX;
       touchStartY = event.changedTouches[0].screenY;
-    }, false);
+      // Empêcher le comportement par défaut
+      event.preventDefault();
+    }, { passive: false });
 
-    document.addEventListener('touchend', function(event) {
+    gameContainerWrapper.addEventListener('touchmove', function(event) {
+      // Empêcher le comportement par défaut
+      event.preventDefault();
+    }, { passive: false });
+
+    gameContainerWrapper.addEventListener('touchend', function(event) {
       if (!touchStartX || !touchStartY) {
         return;
       }
@@ -247,24 +262,32 @@
       let deltaX = touchEndX - touchStartX;
       let deltaY = touchEndY - touchStartY;
 
+      // Déterminer si le geste est suffisamment significatif
+      if (Math.abs(deltaX) < 30 && Math.abs(deltaY) < 30) {
+        // Geste trop court, on ne fait rien
+        return;
+      }
+
       if (Math.abs(deltaX) > Math.abs(deltaY)) {
         // Mouvement horizontal
-        if (deltaX > 30) {
+        if (deltaX > 0) {
           simulateKeyPress('ArrowRight');
-        } else if (deltaX < -30) {
+        } else {
           simulateKeyPress('ArrowLeft');
         }
       } else {
         // Mouvement vertical
-        if (deltaY > 30) {
+        if (deltaY > 0) {
           simulateKeyPress('ArrowDown');
-        } else if (deltaY < -30) {
+        } else {
           simulateKeyPress('ArrowUp');
         }
       }
       touchStartX = null;
       touchStartY = null;
-    }, false);
+      // Empêcher le comportement par défaut
+      event.preventDefault();
+    }, { passive: false });
 
     // Simulation de la pression des touches
     function simulateKeyPress(key) {
