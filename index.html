@@ -17,8 +17,37 @@
       overflow: hidden;
     }
 
-    h1 {
-      margin-top: 20px;
+    /* Styles pour l'écran de bienvenue */
+    #welcome-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #faf8ef;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #welcome-screen h1 {
+      font-size: 2em;
+      margin-bottom: 20px;
+    }
+
+    #welcome-screen button {
+      background-color: #8f7a66;
+      color: #f9f6f2;
+      font-size: 24px;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    #welcome-screen button:hover {
+      background-color: #a67c52;
     }
 
     #game-container-wrapper {
@@ -27,17 +56,15 @@
       max-width: 500px;
       margin: 20px auto;
       padding-bottom: 70px;
-      /* Désactiver les actions tactiles par défaut */
+      /* Désactiver les actions tactiles par défaut uniquement sur le conteneur du jeu */
       touch-action: none;
     }
 
     #game-container {
       width: 100%;
-      height: 100%;
       background-color: #bbada0;
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      grid-template-rows: repeat(4, 1fr);
       gap: 10px;
       border-radius: 10px;
       padding: 10px;
@@ -49,13 +76,35 @@
 
     .tile {
       background-color: #cdc1b4;
-      font-size: calc(2vw + 2vh);
+      font-size: calc(1vw + 2vh);
       color: #776e65;
       display: flex;
       align-items: center;
       justify-content: center;
       border-radius: 5px;
       transition: all 0.2s ease;
+      width: 100%;
+      position: relative;
+    }
+
+    .tile::before {
+      content: "";
+      display: block;
+      padding-top: 100%; /* Hauteur égale à la largeur */
+    }
+
+    .tile-content {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      /* Centrer le contenu */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold; /* Texte en gras */
+      font-size: calc(2vw + 2vh); 
     }
 
     .tile.new {
@@ -90,19 +139,36 @@
     #controls button:hover {
       background-color: #a67c52;
     }
+
+    /* Style pour l'affichage du score */
+    #score-display {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      font-size: 1.5em;
+      color: #776e65;
+    }
   </style>
 </head>
 <body>
-  <h1>2048</h1>
-  <div id="game-container-wrapper">
+
+  <div id="welcome-screen">
+    <h1>Bienvenue sur 2048</h1>
+    <button id="start-button">Démarrer le jeu</button>
+  </div>
+
+  <div id="game-container-wrapper" style="display: none;">
     <div id="game-container">
       <!-- La grille du jeu sera générée ici -->
     </div>
+    <!-- Affichage du score -->
+    <div id="score-display">Score: 0</div>
   </div>
 
   <!-- Boutons de contrôle -->
-  <div id="controls">
+  <div id="controls" style="display: none;">
     <button id="undo-button">Annuler</button>
+    <button id="restart-button">Redémarrer</button>
     <button id="next-four-button">Prochaine tuile : 4</button>
   </div>
 
@@ -153,6 +219,15 @@
       }
     }
 
+    // Fonction pour redémarrer le jeu
+    function restartGame() {
+      saveState(); // Sauvegarder l'état actuel au cas où
+      createEmptyGrid();
+      addNewTile();
+      addNewTile();
+      updateGrid();
+    }
+
     // Ajout d'une nouvelle tuile
     function addNewTile() {
       let options = [];
@@ -170,6 +245,17 @@
       }
     }
 
+    // Calculer la somme de toutes les tuiles
+    function calculateSumOfTiles() {
+      let sum = 0;
+      for (let i = 0; i < gridSize; i++) {
+        for (let j = 0; j < gridSize; j++) {
+          sum += grid[i][j];
+        }
+      }
+      return sum;
+    }
+
     // Mise à jour de l'affichage de la grille
     function updateGrid() {
       const gameContainer = document.getElementById('game-container');
@@ -178,17 +264,24 @@
         for (let j = 0; j < gridSize; j++) {
           const tile = document.createElement('div');
           tile.classList.add('tile');
+          const tileContent = document.createElement('div');
+          tileContent.classList.add('tile-content');
           if (grid[i][j] !== 0) {
-            tile.textContent = grid[i][j];
+            tileContent.textContent = grid[i][j];
             tile.style.backgroundColor = getTileColor(grid[i][j]);
             tile.classList.add('new');
           } else {
-            tile.textContent = '';
+            tileContent.textContent = '';
             tile.style.backgroundColor = '#cdc1b4';
           }
+          tile.appendChild(tileContent);
           gameContainer.appendChild(tile);
         }
       }
+
+      // Mettre à jour l'affichage du score
+      const sumOfTiles = calculateSumOfTiles();
+      document.getElementById('score-display').textContent = 'Score: ' + sumOfTiles;
     }
 
     // Couleurs des tuiles
@@ -237,7 +330,7 @@
       }
     }
 
-    // Gestion des gestes tactiles
+    // Gestion des gestes tactiles sur le conteneur du jeu uniquement
     let touchStartX = null;
     let touchStartY = null;
 
@@ -301,6 +394,10 @@
     // Écouteurs pour les boutons
     document.getElementById('undo-button').addEventListener('click', function() {
       undo();
+    });
+
+    document.getElementById('restart-button').addEventListener('click', function() {
+      restartGame();
     });
 
     document.getElementById('next-four-button').addEventListener('click', function() {
@@ -398,31 +495,28 @@
 
     // Vérification de la fin du jeu
     function checkGameOver() {
+      if (!movesAvailable()) {
+        alert('Game Over! Revenir à la position précédente.');
+        undo(); // Revenir à l'état précédent
+      }
+    }
+
+    // Vérification des mouvements disponibles
+    function movesAvailable() {
       for (let i = 0; i < gridSize; i++) {
         for (let j = 0; j < gridSize; j++) {
           if (grid[i][j] === 0) {
-            return;
+            return true;
           }
           if (j !== gridSize - 1 && grid[i][j] === grid[i][j + 1]) {
-            return;
+            return true;
           }
           if (i !== gridSize - 1 && grid[i][j] === grid[i + 1][j]) {
-            return;
+            return true;
           }
         }
       }
-      alert('Game Over!');
-    }
-
-    // Vérification de la victoire
-    function checkWin() {
-      for (let i = 0; i < gridSize; i++) {
-        for (let j = 0; j < gridSize; j++) {
-          if (grid[i][j] === 2048) {
-            alert('Vous avez gagné !');
-          }
-        }
-      }
+      return false;
     }
 
     // Initialiser l'audio lors de la première interaction
@@ -462,6 +556,16 @@
       oscillator.stop(audioContext.currentTime + 0.2);
     }
 
+    // Initialisation du jeu lors du clic sur le bouton "Démarrer le jeu"
+    document.getElementById('start-button').addEventListener('click', function() {
+      initializeAudio(); // Initialiser l'audio
+      init(); // Initialiser le jeu
+      // Masquer l'écran de bienvenue et afficher le jeu
+      document.getElementById('welcome-screen').style.display = 'none';
+      document.getElementById('game-container-wrapper').style.display = 'block';
+      document.getElementById('controls').style.display = 'block';
+    });
+
     // Initialisation du jeu
     function init() {
       createEmptyGrid();
@@ -469,8 +573,6 @@
       addNewTile();
       updateGrid();
     }
-
-    init();
 
     // Enregistrement du service worker
     if ('serviceWorker' in navigator) {
