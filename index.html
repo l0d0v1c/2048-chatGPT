@@ -113,6 +113,8 @@
     let score = 0;
     let previousScore = 0;
     let nextTileIsFour = false;
+    let audioContext = null; // AudioContext global
+    let isAudioInitialized = false; // Indicateur pour savoir si l'audio est initialisé
 
     // Création d'une grille vide
     function createEmptyGrid() {
@@ -211,6 +213,7 @@
     document.addEventListener('keydown', handleKeyPress);
 
     function handleKeyPress(event) {
+      initializeAudio(); // Initialiser l'audio si ce n'est pas déjà fait
       let moved = false;
       saveState();
       switch (event.key) {
@@ -253,6 +256,7 @@
     }, { passive: false });
 
     gameContainerWrapper.addEventListener('touchend', function(event) {
+      initializeAudio(); // Initialiser l'audio si ce n'est pas déjà fait
       if (!touchStartX || !touchStartY) {
         return;
       }
@@ -421,11 +425,29 @@
       }
     }
 
+    // Initialiser l'audio lors de la première interaction
+    function initializeAudio() {
+      if (!isAudioInitialized) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        isAudioInitialized = true;
+      }
+      // Reprendre l'audioContext s'il est suspendu
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+    }
+
     // Fonction pour jouer un son en fonction de la valeur fusionnée
     function playSound(value) {
-      const context = new (window.AudioContext || window.webkitAudioContext)();
-      const oscillator = context.createOscillator();
-      const gainNode = context.createGain();
+      if (!audioContext) return; // Si l'audio n'est pas initialisé, ne rien faire
+
+      // Reprendre l'audioContext s'il est suspendu
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
 
       // Définir la fréquence en fonction de la valeur
       let frequency = 200 + (Math.log2(value) * 100);
@@ -433,11 +455,11 @@
 
       oscillator.type = 'sine';
       oscillator.connect(gainNode);
-      gainNode.connect(context.destination);
+      gainNode.connect(audioContext.destination);
 
       oscillator.start();
-      gainNode.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.2);
-      oscillator.stop(context.currentTime + 0.2);
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.2);
+      oscillator.stop(audioContext.currentTime + 0.2);
     }
 
     // Initialisation du jeu
