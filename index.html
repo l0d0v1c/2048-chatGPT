@@ -154,7 +154,15 @@
 
   <div id="welcome-screen">
     <h1>Bienvenue sur 2048</h1>
+    <h2>Codé par chatGPT o1-preview</h2>
     <button id="start-button">Démarrer le jeu</button>
+  </div>
+
+<!-- Boutons de contrôle -->
+  <div id="controls" style="display: none;">
+    <button id="undo-button">Annuler</button>
+    <button id="restart-button">Redémarrer</button>
+    <button id="next-four-button">4</button>
   </div>
 
   <div id="game-container-wrapper" style="display: none;">
@@ -165,12 +173,7 @@
     <div id="score-display">Score: 0</div>
   </div>
 
-  <!-- Boutons de contrôle -->
-  <div id="controls" style="display: none;">
-    <button id="undo-button">Annuler</button>
-    <button id="restart-button">Redémarrer</button>
-    <button id="next-four-button">Prochaine tuile : 4</button>
-  </div>
+  
 
   <script>
     const gridSize = 4;
@@ -203,21 +206,33 @@
     }
 
     // Sauvegarder l'état actuel
-    function saveState() {
-      previousGrid = copyGrid(grid);
-      previousScore = score;
-    }
+    let previousGrids = [];  // Pile des derniers états de la grille
+let previousScores = []; // Pile des derniers scores
+const maxUndoSteps = 5;  // Limite de 5 étapes
+
+function saveState() {
+  // Enregistrer l'état actuel dans les piles
+  previousGrids.push(copyGrid(grid));
+  previousScores.push(score);
+
+  // Si on dépasse la limite, supprimer le plus ancien état
+  if (previousGrids.length > maxUndoSteps) {
+    previousGrids.shift();
+    previousScores.shift();
+  }
+}
 
     // Restaurer l'état précédent
     function undo() {
-      if (previousGrid.length > 0) {
-        grid = copyGrid(previousGrid);
-        score = previousScore;
-        updateGrid();
-      } else {
-        alert("Impossible d'annuler !");
-      }
-    }
+  if (previousGrids.length > 0) {
+    // Restaurer le dernier état
+    grid = previousGrids.pop();
+    score = previousScores.pop();
+    updateGrid(); // Mettre à jour l'affichage de la grille
+  } else {
+    alert("Impossible d'annuler davantage !");
+  }
+}
 
     // Fonction pour redémarrer le jeu
     function restartGame() {
@@ -306,29 +321,29 @@
     document.addEventListener('keydown', handleKeyPress);
 
     function handleKeyPress(event) {
-      initializeAudio(); // Initialiser l'audio si ce n'est pas déjà fait
-      let moved = false;
-      saveState();
-      switch (event.key) {
-        case 'ArrowUp':
-          moved = slideUp();
-          break;
-        case 'ArrowDown':
-          moved = slideDown();
-          break;
-        case 'ArrowLeft':
-          moved = slideLeft();
-          break;
-        case 'ArrowRight':
-          moved = slideRight();
-          break;
-      }
-      if (moved) {
-        addNewTile();
-        updateGrid();
-        checkGameOver();
-      }
-    }
+  initializeAudio(); // Initialiser l'audio si ce n'est pas déjà fait
+  let moved = false;
+  saveState(); // Sauvegarder l'état actuel avant le mouvement
+  switch (event.key) {
+    case 'ArrowUp':
+      moved = slideUp();
+      break;
+    case 'ArrowDown':
+      moved = slideDown();
+      break;
+    case 'ArrowLeft':
+      moved = slideLeft();
+      break;
+    case 'ArrowRight':
+      moved = slideRight();
+      break;
+  }
+  if (moved) {
+    addNewTile();
+    updateGrid();
+    checkGameOver();
+  }
+}
 
     // Gestion des gestes tactiles sur le conteneur du jeu uniquement
     let touchStartX = null;
@@ -397,8 +412,10 @@
     });
 
     document.getElementById('restart-button').addEventListener('click', function() {
-      restartGame();
-    });
+  if (confirm("Êtes-vous sûr de vouloir redémarrer la partie ?")) {
+    restartGame();
+  }
+});
 
     document.getElementById('next-four-button').addEventListener('click', function() {
       nextTileIsFour = true;
