@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+    <head>
+        <title>JZX2048</title>
+        <meta charset="utf-8">
+        <script src="jsspeccy/jsspeccy.js"></script>
+        <style>
+            body {
+                background-color: #444;
+            }
+            #jsspeccy {
+                width: 640px;
+                margin: auto;
+                background-color: white;
+            }
+            h1 {color:white;}
+        </style>
+        <script>
+            function go(){
+            let emu = JSSpeccy(document.getElementById('jsspeccy'), {zoom: 2, sandbox: true, machine: 48, autoStart:true, autoLoadTapes:true, openUrl:'2048.TZX', uiEnabled:false}); 
+        }
+
+
+        </script>
+
+        
+    </head>
+    <body onload="go();">
+        <div id="jsspeccy"></div>
+        <h1>Tapez R puis enter pour démarrer</h1>
+    </body>
+</html>
